@@ -8,6 +8,8 @@
 #include <netinet/ip_icmp.h>
 
 bool IcmpScan::OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigned char** patcket, int length) {
+    GD_PROFILE_SCOPE("IcmpScan");
+
     if (const auto icmpPacket = std::make_shared<IcmpPacket>(ipPacket)) {
         const uint32_t src_ip = ipPacket->GetSourceIp();
         const uint32_t dst_ip = ipPacket->GetDestinationIp();
@@ -22,7 +24,8 @@ bool IcmpScan::OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigned char
                 counter.destinations.insert(dst_ip);
             counter.last_seen = Time::GetTime();
 
-            if (counter.destinations.size() > 1 && counter.count > SCAN_THRESHOLD) {
+            if (counter.destinations.size() > 1 &&
+                counter.count > 5) {
                 // std::cout << std::format("Potential ICMP scan detected | {} - {} | {} -> {}", counter.destinations.size(), counter.count, ipPacket->GetSourceIpStr(), ipPacket->GetDestinationIpStr()) << std::endl;
                 // m_IcmpMap.erase(src_ip);
                 return false;
@@ -39,7 +42,7 @@ void IcmpScan::cleanup_old_entries() {
 
     for (auto it = m_IcmpMap.begin(); it != m_IcmpMap.end(); ) {
         const Timestep timestep = currentTime - it->second.last_seen;
-        if (timestep.GetSeconds() > CLEANUP_INTERVAL) {
+        if (timestep.GetSeconds() > 20) {
             it = m_IcmpMap.erase(it);
         } else {
             ++it;

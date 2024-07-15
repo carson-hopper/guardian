@@ -6,12 +6,9 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#define SYN_FLOOD_THRESHOLD 1000
-#define CLEANUP_INTERVAL 15
-
 class SynFlood: public Detection {
 public:
-    SynFlood(short protocol): Detection(protocol) {}
+    SynFlood(const short protocol): Detection(protocol) {}
 
     bool OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigned char** patcket, int length) override;
 

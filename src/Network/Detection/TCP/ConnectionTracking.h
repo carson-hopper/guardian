@@ -6,7 +6,7 @@
 class ConnectionTracking: public Detection {
 public:
 
-    ConnectionTracking(short protocol): Detection(protocol) {}
+    ConnectionTracking(const short protocol): Detection(protocol) {}
 
     bool OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigned char** patcket, int length) override;
 

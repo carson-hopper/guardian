@@ -4,7 +4,7 @@
 
 class Detection {
 public:
-    Detection(short protocol);
+    Detection(const short protocol);
     virtual ~Detection() = default;
 
     virtual bool OnAttach() { return true; }

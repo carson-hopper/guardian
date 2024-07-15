@@ -6,9 +6,6 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#define SCAN_THRESHOLD 5
-#define CLEANUP_INTERVAL 20
-
 struct icmp_counter {
     uint32_t count;
     float last_seen;
@@ -18,7 +15,7 @@ struct icmp_counter {
 class IcmpScan: public Detection {
 public:
 
-    IcmpScan(short protocol): Detection(protocol) {}
+    IcmpScan(const short protocol): Detection(protocol) {}
 
     bool OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigned char** patcket, int length) override;
 

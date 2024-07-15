@@ -13,6 +13,8 @@
 #include <linux/netfilter.h>
 
 int NfqLayer::packet_handler(nfq_q_handle *queueHandle, nfgenmsg *packetMessage, nfq_data *packetHandle, void *data) {
+    GD_PROFILE_FUNCTION();
+
     auto* layer = static_cast<NfqLayer*>(data);
 
     const nfqnl_msg_packet_hdr* packet_message_handle = nfq_get_msg_packet_hdr(packetHandle);

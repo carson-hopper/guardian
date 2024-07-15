@@ -27,11 +27,7 @@ void signal_handler(int signum) {
 #endif
 
 Guardian::Application *Guardian::CreateApplication(ApplicationCommandLineArgs args) {
-    std::cerr << "   ____       _   _     _ _                 " << std::endl;
-    std::cerr << "   |  _ \\ __ _| |_| |__ | (_)_ __   ___  ___ " << std::endl;
-    std::cerr << R"(   | |_) / _` | __| '_ \| | | '_ \ / _ \/ __|)" << std::endl;
-    std::cerr << "   |  __/ (_| | |_| | | | | | | | |  __/\\__ \\" << std::endl;
-    std::cerr << R"(   |_|   \__,_|\__|_| |_|_|_|_| |_|\___||___/)" << std::endl;
+    std::cerr << std::format("{} v{}", GD_APPLICATION, GD_APPLICATION_VERSION) << std::endl;
     std::cerr << std::endl;
 
 #ifdef GD_PLATFORM_LINUX

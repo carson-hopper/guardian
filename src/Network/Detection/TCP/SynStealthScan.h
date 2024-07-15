@@ -6,12 +6,9 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#define THRESHOLD 10
-#define CLEANUP_INTERVAL 60
-
 class SynStealthScan: public Detection {
 public:
-    SynStealthScan(short protocol): Detection(protocol) {}
+    SynStealthScan(const short protocol): Detection(protocol) {}
 
     bool OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigned char** patcket, int length) override;
 

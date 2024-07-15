@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Guardian/Core/Base.h"
+#include <netinet/ip.h>
 
 class IpPacket {
 public:

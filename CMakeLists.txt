@@ -3,6 +3,8 @@ project(Protect)
 
 set(CMAKE_CXX_STANDARD 23)
 
+message(STATUS "Working Dir: ${CMAKE_SOURCE_DIR}")
+
 add_subdirectory(vendor/glm)
 add_subdirectory(vendor/spdlog)
 
@@ -12,7 +14,7 @@ include_directories(/usr/include/lua5.4)
 include_directories(./src)
 
 # Enable it and fix all warnings
-# add_definitions ("-Wall")
+add_definitions ("-Wall")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions("-DGD_ENABLE_ASSERTS")
@@ -21,6 +23,32 @@ endif()
 
 # It can be disabled this way: cmake .. -DENABLE_NFQ_SUPPORT=OFF
 option(ENABLE_NFQ_SUPPORT "Enable NFQ support" ON)
+
+# Get last commit hash
+# execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 OUTPUT_VARIABLE GIT_LAST_COMMIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# Short 8 symbol commit
+execute_process(
+    COMMAND git rev-list HEAD -n 1
+    COMMAND cut -c1-8
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_LAST_COMMIT_HASH_SHORT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+execute_process(
+        COMMAND git rev-list --count HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_COUNT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+message(STATUS "Commit hash: ${GIT_LAST_COMMIT_HASH_SHORT}")
+
+set (GD_VERSION_MAJOR 0)
+set (GD_APPLICATION_VERSION "${GD_VERSION_MAJOR}.${GIT_COMMIT_COUNT} ${GIT_LAST_COMMIT_HASH_SHORT}")
+add_definitions("-DGD_APPLICATION_VERSION=\"${GD_APPLICATION_VERSION}\"")
+add_definitions("-DGD_APPLICATION=\"${PROJECT_NAME}\"")
 
 add_executable(${PROJECT_NAME} src/Protect.cpp
         src/gdpch.h
@@ -62,20 +90,6 @@ add_executable(${PROJECT_NAME} src/Protect.cpp
         src/Guardian/Guardian.h
         src/Guardian/Debug/Instrumentor.h
 )
-
-# Get last commit hash
-# execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 OUTPUT_VARIABLE GIT_LAST_COMMIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-# Short 8 symbol commit
-# execute_process(COMMAND git rev-list HEAD COMMAND head -n 1 COMMAND cut -c1-8 OUTPUT_VARIABLE GIT_LAST_COMMIT_HASH_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
-set (GIT_LAST_COMMIT_HASH_SHORT "")
-
-# message(STATUS "Commit hash: ${GIT_LAST_COMMIT_HASH_SHORT}")
-
-set (PLP_VERSION_MAJOR 1)
-set (PLP_VERSION_MINOR 2)
-set (PLP_VERSION_PATCH 8)
-set (PLP_APPLICATION_VERSION "${PLP_VERSION_MAJOR}.${PLP_VERSION_MINOR}.${PLP_VERSION_PATCH} ${GIT_LAST_COMMIT_HASH_SHORT}")
 
 # Link the required libraries
 target_link_libraries(${PROJECT_NAME} lua5.4)
