@@ -14,8 +14,8 @@ public:
     void OnUpdate(Timestep ts) override;
 
     template<typename T>
-        bool PushDetection(short protocol) {
-        static_assert(std::is_base_of<Detection, T>::value, "Pushed type is not subclass of Detection!");
+    bool PushDetection(short protocol) {
+        static_assert(std::is_base_of_v<Detection, T>, "Pushed type is not subclass of Detection!");
 
         const auto detection = CreateRef<T>(protocol);
         m_Detections.emplace_back(detection);
