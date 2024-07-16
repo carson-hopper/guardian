@@ -22,7 +22,7 @@ public:
         return detection->OnAttach();
     }
 
-    static int packet_handler(struct nfq_q_handle *queueHandle, struct nfgenmsg *packetMessage, struct nfq_data *packetHandle, void *packetData);
+    static int PacketHandler(nfq_q_handle* queueHandle, nfgenmsg* packetMessage, nfq_data* packetHandle, void* data);
 
 private:
 

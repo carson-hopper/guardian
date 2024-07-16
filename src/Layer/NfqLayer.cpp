@@ -12,10 +12,10 @@
 #include <libnetfilter_queue/libnetfilter_queue.h>
 #include <linux/netfilter.h>
 
-int NfqLayer::packet_handler(nfq_q_handle *queueHandle, nfgenmsg *packetMessage, nfq_data *packetHandle, void *data) {
+int NfqLayer::PacketHandler(nfq_q_handle *queueHandle, nfgenmsg *packetMessage, nfq_data *packetHandle, void *data) {
     GD_PROFILE_FUNCTION();
 
-    auto* layer = static_cast<NfqLayer*>(data);
+    const auto layer = static_cast<NfqLayer*>(data);
 
     const nfqnl_msg_packet_hdr* packet_message_handle = nfq_get_msg_packet_hdr(packetHandle);
     if (!packet_message_handle)
@@ -58,7 +58,7 @@ bool NfqLayer::OnAttach() {
     }
 
     constexpr int queueNumber = 0;
-    m_QueueHandle = nfq_create_queue(m_Handle, queueNumber, &packet_handler, this);
+    m_QueueHandle = nfq_create_queue(m_Handle, queueNumber, &PacketHandler, this);
 
     if (!m_QueueHandle) {
         std::cerr << "Error during nfq_create_queue(): " << strerror(errno) << std::endl;
