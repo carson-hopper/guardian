@@ -4,16 +4,19 @@
 #include "Guardian/Network/Packet/IpPacket.h"
 
 #include "Network/Detection/ICMP/IcmpScan.h"
-#include "Network/Detection/TCP/ConnectionTracking.h"
+#include "Network/Detection/TCP/SynCookie.h"
 #include "Network/Detection/TCP/SynFlood.h"
 #include "Network/Detection/TCP/SynStealthScan.h"
 
-#include <pcap.h>
 #include <libnetfilter_queue/libnetfilter_queue.h>
 #include <linux/netfilter.h>
 
+#include <openssl/hmac.h>
+
+#include "glm/gtx/extended_min_max.hpp"
+
 int NfqLayer::PacketHandler(nfq_q_handle *queueHandle, nfgenmsg *packetMessage, nfq_data *packetHandle, void *data) {
-    GD_PROFILE_FUNCTION();
+    // GD_PROFILE_FUNCTION();
 
     const auto layer = static_cast<NfqLayer*>(data);
 
@@ -23,18 +26,21 @@ int NfqLayer::PacketHandler(nfq_q_handle *queueHandle, nfgenmsg *packetMessage, 
 
     uint32_t packetId = ntohl(packet_message_handle->packet_id);
 
-    unsigned char *packetData;
-    int packetLength = nfq_get_payload(packetHandle, &packetData);
+    u_char* packetData;
+    const int packetLength = nfq_get_payload(packetHandle, &packetData);
     if (packetLength >= 0) {
-        const auto ipPacket = Guardian::CreateRef<IpPacket>(packetData, packetLength);
+        const auto ipPacket = new IpPacket(Buffer(packetData, packetLength));
 
         for (const auto& detection : layer->m_Detections) {
-            if ((ipPacket->GetProtocol() == detection->GetProtocol() || detection->GetProtocol() == -1)
-                && !detection->OnUpdate(ipPacket, &packetData, packetLength))
-                    return nfq_set_verdict(queueHandle, packetId, NF_DROP, packetLength, packetData);
+            auto [verdict, _packetData, _packetLength] = detection->OnUpdate(ipPacket);
+
+            if (verdict == NF_DROP || memcmp(packetData, _packetData, glm::min(packetLength, _packetLength)) != 0)
+                return nfq_set_verdict(queueHandle, packetId, verdict, _packetLength, _packetData);
         }
     }
-    return nfq_set_verdict(queueHandle, packetId, NF_ACCEPT, packetLength, packetData);
+
+
+    return nfq_set_verdict(queueHandle, packetId, NF_ACCEPT, 0, nullptr);
 }
 
 bool NfqLayer::OnAttach() {
@@ -83,9 +89,9 @@ bool NfqLayer::OnAttach() {
 
     PushDetection<IcmpScan>(IPPROTO_ICMP);
 
-    PushDetection<ConnectionTracking>(IPPROTO_TCP);
-    PushDetection<SynFlood>(IPPROTO_TCP);
-    PushDetection<SynStealthScan>(IPPROTO_TCP);
+    // PushDetection<SynCookie>(IPPROTO_TCP);
+    // PushDetection<SynFlood>(IPPROTO_TCP);
+    // PushDetection<SynStealthScan>(IPPROTO_TCP);
 
     return true;
 }

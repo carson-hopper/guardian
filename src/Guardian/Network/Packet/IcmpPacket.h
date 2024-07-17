@@ -5,7 +5,7 @@
 
 class IcmpPacket: public IpPacket {
 public:
-    IcmpPacket(const std::shared_ptr<IpPacket>& ipPacket);
+    IcmpPacket(IpPacket* ipPacket);
 
     [[nodiscard]] uint8_t GetType() const { return m_Type; }
     [[nodiscard]] uint8_t GetCode() const { return m_Code; }

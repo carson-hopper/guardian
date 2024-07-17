@@ -10,7 +10,7 @@ class SynStealthScan: public Detection {
 public:
     SynStealthScan(const short protocol): Detection(protocol) {}
 
-    bool OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigned char** patcket, int length) override;
+    std::tuple<int, unsigned char*, int> OnTcpUpdate(TcpPacket* tcpPacket) override;
 
 private:
     struct syn_counter {

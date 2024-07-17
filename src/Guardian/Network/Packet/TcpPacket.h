@@ -9,7 +9,7 @@
 
 class TcpPacket: public IpPacket {
 public:
-    TcpPacket(const std::shared_ptr<IpPacket>& ipPacket); // NOLINT(*-explicit-constructor)
+    TcpPacket(IpPacket* ipPacket); // NOLINT(*-explicit-constructor)
 
     [[nodiscard]] bool IsSyn() const { return (m_Flags & 0x02) != 0; }
     [[nodiscard]] bool IsAck() const { return (m_Flags & 0x10) != 0; }
@@ -19,12 +19,11 @@ public:
     [[nodiscard]] uint16_t GetSourcePort() const { return m_SourcePort; }
     [[nodiscard]] uint16_t GetDestinationPort() const { return m_DestinationPort; }
     [[nodiscard]] uint8_t GetFlags() const { return m_Flags; }
+    [[nodiscard]] uint64_t GetConnectionId() const;
 
-    void SetConnectionState();
-    [[nodiscard]] std::optional<TcpConnection> GetConnection() const;
+    [[nodiscard]] std::shared_ptr<TcpConnection> GetConnection() const;
 
 private:
-    [[nodiscard]] uint64_t GetConnectionId() const;
 
 private:
     uint16_t m_SourcePort;

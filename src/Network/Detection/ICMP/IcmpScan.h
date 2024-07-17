@@ -17,7 +17,7 @@ public:
 
     IcmpScan(const short protocol): Detection(protocol) {}
 
-    bool OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigned char** patcket, int length) override;
+    std::tuple<int, unsigned char*, int> OnIcmpUpdate(IcmpPacket* icmpPacket) override;
 
 private:
 

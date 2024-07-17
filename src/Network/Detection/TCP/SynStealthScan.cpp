@@ -5,15 +5,12 @@
 #include "Guardian/Network/Packet/TcpPacket.h"
 #include "Guardian/Network/TcpConnection.h"
 
-bool SynStealthScan::OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigned char** patcket, int length) {
+
+std::tuple<int, unsigned char*, int> SynStealthScan::OnTcpUpdate(TcpPacket* tcpPacket) {
     GD_PROFILE_SCOPE("SynStealthScan");
 
-    if (const auto tcpPacket = std::make_shared<TcpPacket>(ipPacket)) {
-
-        const auto connection = tcpPacket->GetConnection();
-        if (!connection.has_value()) return true;
-
-        const uint32_t src_ip = ipPacket->GetSourceIp();
+    if (const auto connection = tcpPacket->GetConnection()) {
+        const uint32_t src_ip = tcpPacket->GetSourceIp();
 
         auto& counter = m_SynMap[src_ip];
         counter.last_seen = Time::GetTime();
@@ -30,7 +27,7 @@ bool SynStealthScan::OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigne
             counter.ack_count < counter.syn_count / 2 &&
             counter.rst_count < counter.syn_count / 2) {
             // std::cout << "Potential half-open SYN scan detected from IP: " << ipPacket->GetSourceIpStr() << std::endl;
-            return true;
+            // return {NF_DROP, tcpPacket->GetData()->Data, tcpPacket->GetData()->Size};
         }
     }
 
@@ -44,5 +41,5 @@ bool SynStealthScan::OnUpdate(const std::shared_ptr<IpPacket>& ipPacket, unsigne
         }
     }
 
-    return true;
+    return {NF_ACCEPT, tcpPacket->GetData()->Data, tcpPacket->GetData()->Size};
 }

@@ -5,16 +5,11 @@
 #include <arpa/inet.h>
 #include <netinet/ip.h>
 
-IpPacket::IpPacket(const unsigned char *packet, int length)
-    : m_Data(packet), m_Length(length) {
+IpPacket::IpPacket(Buffer packet)
+    : m_Data(&packet) {
 
-    auto *ip_hdr = reinterpret_cast<const struct ip*>(packet);
+    auto *ip_hdr = m_Data->As<const struct ip>();
     m_IpHeader = ip_hdr;
-
-    char src_ip[INET_ADDRSTRLEN];
-    char dst_ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(ip_hdr->ip_src), src_ip, INET_ADDRSTRLEN);
-    inet_ntop(AF_INET, &(ip_hdr->ip_dst), dst_ip, INET_ADDRSTRLEN);
 
     m_SourceIp = ip_hdr->ip_src.s_addr;
     m_DestinationIp = ip_hdr->ip_dst.s_addr;
