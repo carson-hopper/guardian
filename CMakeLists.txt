@@ -3,14 +3,12 @@ project(Protect)
 
 set(CMAKE_CXX_STANDARD 23)
 
-message(STATUS "Working Dir: ${CMAKE_SOURCE_DIR}")
-
 add_subdirectory(vendor/glm)
 add_subdirectory(vendor/spdlog)
 
 # Add include directories
+include_directories(/usr/include/libnet)
 include_directories(/usr/include/hiredis)
-include_directories(/usr/include/lua5.4)
 include_directories(./src)
 
 # Enable it and fix all warnings
@@ -82,20 +80,18 @@ add_executable(${PROJECT_NAME} src/Protect.cpp
         src/Network/Detection/TCP/SynStealthScan.h
         src/Guardian/Network/TcpConnection.cpp
         src/Guardian/Network/TcpConnection.h
-        src/Network/Detection/TCP/ConnectionTracking.cpp
-        src/Network/Detection/TCP/ConnectionTracking.h
         src/Guardian/Core/Log.cpp
         src/Guardian/Core/Log.h
         src/Guardian/Core/Assert.h
         src/Guardian/Guardian.h
         src/Guardian/Debug/Instrumentor.h
+        src/Guardian/Core/Buffer.h
 )
 
 # Link the required libraries
-target_link_libraries(${PROJECT_NAME} lua5.4)
-target_link_libraries(${PROJECT_NAME} hiredis)
-target_link_libraries(${PROJECT_NAME} pthread)
-target_link_libraries(${PROJECT_NAME} pcap)
+# target_link_libraries(${PROJECT_NAME} hiredis)
+# target_link_libraries(${PROJECT_NAME} pthread)
 target_link_libraries(${PROJECT_NAME} netfilter_queue)
 target_link_libraries(${PROJECT_NAME} spdlog)
 target_link_libraries(${PROJECT_NAME} glm)
+target_link_libraries(${PROJECT_NAME} /usr/lib/x86_64-linux-gnu/libnet.so)
