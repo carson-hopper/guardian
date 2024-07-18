@@ -4,7 +4,6 @@
 #include "Guardian/Network/Packet/IpPacket.h"
 
 #include "Network/Detection/ICMP/IcmpScan.h"
-#include "Network/Detection/TCP/SynCookie.h"
 #include "Network/Detection/TCP/SynFlood.h"
 #include "Network/Detection/TCP/SynStealthScan.h"
 
@@ -16,7 +15,7 @@
 #include "glm/gtx/extended_min_max.hpp"
 
 int NfqLayer::PacketHandler(nfq_q_handle *queueHandle, nfgenmsg *packetMessage, nfq_data *packetHandle, void *data) {
-    // GD_PROFILE_FUNCTION();
+    GD_PROFILE_FUNCTION();
 
     const auto layer = static_cast<NfqLayer*>(data);
 
@@ -89,7 +88,6 @@ bool NfqLayer::OnAttach() {
 
     PushDetection<IcmpScan>(IPPROTO_ICMP);
 
-    // PushDetection<SynCookie>(IPPROTO_TCP);
     // PushDetection<SynFlood>(IPPROTO_TCP);
     // PushDetection<SynStealthScan>(IPPROTO_TCP);
 
