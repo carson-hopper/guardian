@@ -26,7 +26,7 @@ void signal_handler(int signum) {
 
 #endif
 
-Guardian::Application *Guardian::CreateApplication(ApplicationCommandLineArgs args) {
+Application *Guardian::CreateApplication(ApplicationCommandLineArgs args) {
     std::cerr << std::format("{} v{}", GD_APPLICATION, GD_APPLICATION_VERSION) << std::endl;
     std::cerr << std::endl;
 
@@ -34,13 +34,12 @@ Guardian::Application *Guardian::CreateApplication(ApplicationCommandLineArgs ar
     signal(SIGINT, signal_handler);
 #endif
 
-    Guardian::ApplicationSpecification spec;
+    ApplicationSpecification spec;
     spec.CommandLineArgs = args;
     spec.WorkingDirectory = "./";
 
     application = new Guardian::Application(spec);
-    if (!application->PushLayer<NfqLayer>())
-        return nullptr;
+    GD_ASSERT(application->PushLayer<NfqLayer>(), "Nfq failed")
 
     return application;
 }

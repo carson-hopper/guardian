@@ -66,18 +66,6 @@ add_executable(${PROJECT_NAME} src/Protect.cpp
         src/Layer/NfqLayer.h
         src/Layer/NfqLayer.cpp
         src/Guardian/Network/Packet/IpPacket.cpp
-        src/Network/Detection/Detection.h
-        src/Network/Detection/Detection.cpp
-        src/Network/Detection/TCP/SynFlood.h
-        src/Network/Detection/TCP/SynFlood.cpp
-        src/Guardian/Network/Packet/TcpPacket.cpp
-        src/Guardian/Network/Packet/TcpPacket.h
-        src/Network/Detection/ICMP/IcmpScan.cpp
-        src/Network/Detection/ICMP/IcmpScan.h
-        src/Guardian/Network/Packet/IcmpPacket.h
-        src/Guardian/Network/Packet/IcmpPacket.cpp
-        src/Network/Detection/TCP/SynStealthScan.cpp
-        src/Network/Detection/TCP/SynStealthScan.h
         src/Guardian/Network/TcpConnection.cpp
         src/Guardian/Network/TcpConnection.h
         src/Guardian/Core/Log.cpp
@@ -86,12 +74,27 @@ add_executable(${PROJECT_NAME} src/Protect.cpp
         src/Guardian/Guardian.h
         src/Guardian/Debug/Instrumentor.h
         src/Guardian/Core/Buffer.h
+        src/Guardian/Network/Packet/Packet.cpp
+        src/Guardian/Network/Packet/Packet.h
+        src/Network/Detection/Mitigation.h
+        src/Network/Detection/ICMP/IcmpFlood.h
+        src/Guardian/Network/Protocol.h
+        src/Guardian/Network/Packet/PacketAction.h
+        src/Network/Detection/ICMP/IcmpFlood.cpp
+        src/Network/Detection/TCP/SynFlood.h
+        src/Network/Detection/TCP/SynFlood.cpp
+        src/Network/Detection/UDP/DnsBlock.cpp
+        src/Network/Detection/UDP/DnsBlock.h
+        src/Guardian/Network/Http.cpp
+        src/Guardian/Network/Http.h
 )
 
 # Link the required libraries
 # target_link_libraries(${PROJECT_NAME} hiredis)
 # target_link_libraries(${PROJECT_NAME} pthread)
+target_link_libraries(${PROJECT_NAME} curl)
 target_link_libraries(${PROJECT_NAME} netfilter_queue)
 target_link_libraries(${PROJECT_NAME} spdlog)
 target_link_libraries(${PROJECT_NAME} glm)
+target_link_libraries(${PROJECT_NAME} ldns)
 target_link_libraries(${PROJECT_NAME} /usr/lib/x86_64-linux-gnu/libnet.so)

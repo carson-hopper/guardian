@@ -1,46 +1,26 @@
 #include "gdpch.h"
 #include "Network/Detection/TCP/SynFlood.h"
+#include <netinet/tcp.h>
 
-#include "Guardian/Guardian.h"
-#include "Guardian/Network/Packet/TcpPacket.h"
+std::tuple<PacketAction, Buffer&> SynFlood::OnUpdate(const Ref<Packet>& packet) {
+    Buffer& buffer = packet->GetBuffer();
+    auto *tcp = packet->GetIpPacket()->GetProtocolHeader<const struct tcphdr>();
 
-std::tuple<int, unsigned char*, int> SynFlood::OnTcpUpdate(TcpPacket* tcpPacket) {
-    GD_PROFILE_SCOPE("SynFlood");
+    m_FloodMap[std::format("{}:{}", packet->GetIpPacket()->GetSourceIp(), ntohs(tcp->dest))]++;
 
-    if (const auto connection = tcpPacket->GetConnection()) {
-        uint32_t src_ip = tcpPacket->GetSourceIp();
-        uint16_t dst_port = tcpPacket->GetDestinationPort();
-
-        auto& counter = m_SynMap[src_ip];
-        counter.last_seen = Time::GetTime();
-
-        if (connection->GetState() == TcpConnectionState::SYN_SENT) {
-            counter.syn_count++;
-            if (!counter.ports.contains(dst_port))
-                counter.ports.insert(dst_port);
-        } else if (connection->GetState() == TcpConnectionState::ESTABLISHED) {
-            counter.ack_count++;
-        } else if (connection->GetState() == TcpConnectionState::RESET) {
-            counter.rst_count++;
+    const float time = Time::GetTime();
+    if (const Timestep timestep = time - m_LastCheckTime; timestep.GetSeconds() > 1) {
+        for (auto it = m_FloodMap.begin(); it != m_FloodMap.end();) {
+            if (it->second >= 100) { // Threshold for SYN flood
+                it = m_FloodMap.erase(it);
+                GD_WARN("SYN Flood Detected: {}:{} -> {}:{}", packet->GetIpPacket()->GetSourceIpStr(), ntohs(tcp->source), packet->GetIpPacket()->GetDestinationIpStr(), ntohs(tcp->dest));
+                return {DROP, buffer};
+            } else {
+                ++it;
+            }
         }
-
-        if (counter.syn_count > 1000
-            && counter.ports.size() >= 2
-            && counter.ack_count < counter.syn_count / 2) {
-            // std::cout << std::format("Potential SYN flood | {} -> {}", ipPacket->GetSourceIpStr(), ipPacket->GetDestinationIpStr()) << std::endl;
-            // return {NF_DROP, tcpPacket->GetData()->Data, tcpPacket->GetData()->Size};
-        }
+        m_LastCheckTime = time;
     }
 
-    float currentTime = Time::GetTime();
-    for (auto it = m_SynMap.begin(); it != m_SynMap.end(); ) {
-        Timestep timestep = currentTime - it->second.last_seen;
-        if (timestep.GetSeconds() > 15) {
-            it = m_SynMap.erase(it);
-        } else {
-            ++it;
-        }
-    }
-
-    return {NF_ACCEPT, tcpPacket->GetData()->Data, tcpPacket->GetData()->Size};
+    return {ACCEPT, buffer};
 }

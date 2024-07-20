@@ -1,5 +1,4 @@
 #include "gdpch.h"
-
 #include "Guardian/Network/TcpConnection.h"
 
 TcpConnection::TcpConnection()

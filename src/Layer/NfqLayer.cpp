@@ -1,78 +1,83 @@
 #include "gdpch.h"
 #include "Layer/NfqLayer.h"
 
+#include "Guardian/Network/Packet/Packet.h"
 #include "Guardian/Network/Packet/IpPacket.h"
 
-#include "Network/Detection/ICMP/IcmpScan.h"
-#include "Network/Detection/TCP/SynFlood.h"
-#include "Network/Detection/TCP/SynStealthScan.h"
+#include "Network/Detection/ICMP/IcmpFlood.h"
+#include "Network/Detection/UDP/DnsBlock.h"
 
 #include <libnetfilter_queue/libnetfilter_queue.h>
-#include <linux/netfilter.h>
+#include <arpa/inet.h>
+#include <netinet/tcp.h>
 
-#include <openssl/hmac.h>
-
-#include "glm/gtx/extended_min_max.hpp"
-
-int NfqLayer::PacketHandler(nfq_q_handle *queueHandle, nfgenmsg *packetMessage, nfq_data *packetHandle, void *data) {
+// std::ofstream logfile("traffic_data.csv", std::ios_base::app);
+int NfqLayer::PacketCallback(nfq_q_handle *queueHandle, nfgenmsg *packetMessage, nfq_data *packetHandle, void *data) {
     GD_PROFILE_FUNCTION();
 
-    const auto layer = static_cast<NfqLayer*>(data);
+    nfqnl_msg_packet_hdr* packetMessageHandle = nfq_get_msg_packet_hdr(packetHandle);
+    if (!packetMessageHandle)
+        return nfq_set_verdict(queueHandle, 0, ACCEPT, 0, nullptr);
 
-    const nfqnl_msg_packet_hdr* packet_message_handle = nfq_get_msg_packet_hdr(packetHandle);
-    if (!packet_message_handle)
-        return nfq_set_verdict(queueHandle, 0, NF_ACCEPT, 0, nullptr);
+    const Ref<Packet> packet = CreateRef<Packet>(queueHandle, packetHandle, packetMessageHandle);
 
-    uint32_t packetId = ntohl(packet_message_handle->packet_id);
+    uint8_t* buffer = packet->GetBuffer().Data;
+    auto* ip_header = reinterpret_cast<iphdr*>(buffer);
+    // GD_INFO("Checksum: {:x} -> {:x}", ip_header->check, packet->GetIpPacket()->CalculateIpChecksum());
 
-    u_char* packetData;
-    const int packetLength = nfq_get_payload(packetHandle, &packetData);
-    if (packetLength >= 0) {
-        const auto ipPacket = new IpPacket(Buffer(packetData, packetLength));
+    ip_header->check = packet->GetIpPacket()->CalculateIpChecksum();
 
-        for (const auto& detection : layer->m_Detections) {
-            auto [verdict, _packetData, _packetLength] = detection->OnUpdate(ipPacket);
+    // logfile << packet->GetIpPacket()->GetProtocolName() << "," << packet->GetIpPacket()->GetSourceIpStr() << "," << packet->GetIpPacket()->GetDestinationIpStr() << "," << packet->GetBuffer().Size << std::endl;
 
-            if (verdict == NF_DROP || memcmp(packetData, _packetData, glm::min(packetLength, _packetLength)) != 0)
-                return nfq_set_verdict(queueHandle, packetId, verdict, _packetLength, _packetData);
+    if (const auto layer = static_cast<NfqLayer*>(data)) {
+        for (const auto& mitigation : layer->m_Mitigations) {
+            if (mitigation->GetProtocol() != packet->GetIpPacket()->GetProtocol()) continue;
+
+            const auto [verdict, buffer] = mitigation->OnUpdate(packet);
+
+            if (verdict == DROP || memcmp(packet->GetBuffer().Data, buffer.Data, glm::min(packet->GetBuffer().Size, buffer.Size)) != 0)
+                return packet->SetVerdict(verdict);
         }
     }
 
-
-    return nfq_set_verdict(queueHandle, packetId, NF_ACCEPT, 0, nullptr);
+    return packet->SetVerdict(ACCEPT);
 }
 
 bool NfqLayer::OnAttach() {
-    m_Handle = nfq_open();
+    GD_ASSERT(PushMitigation<DnsBlock>(), "Failed to load DnsBlock");
+    // PushMitigation<IcmpFlood>();
+    // PushMitigation<SynFlood>();
 
+    m_Handle = nfq_open();
     if (!m_Handle) {
-        std::cerr << "Error during nfq_open(): " << strerror(errno) << std::endl;
+        GD_ERROR("Error during nfq_open(): %i", strerror(errno));
         return false;
     }
 
     if (nfq_unbind_pf(m_Handle, AF_INET) < 0) {
-        std::cerr << "Error during nfq_unbind_pf(): " << strerror(errno) << std::endl;
+        GD_ERROR("Error during nfq_unbind_pf(): %i", strerror(errno));
         nfq_close(m_Handle);
         return false;
     }
 
     if (nfq_bind_pf(m_Handle, AF_INET) < 0) {
-        std::cerr << "Error during nfq_bind_pf(): " << strerror(errno) << std::endl;
+        GD_ERROR("Error during nfq_bind_pf(): %i", strerror(errno));
         nfq_close(m_Handle);
         return false;
     }
 
     constexpr int queueNumber = 0;
-    m_QueueHandle = nfq_create_queue(m_Handle, queueNumber, &PacketHandler, this);
+    m_QueueHandle = nfq_create_queue(m_Handle, queueNumber, &PacketCallback, this);
+    nfq_set_mode(m_QueueHandle, NFQNL_COPY_PACKET, 0xffff);
 
     if (!m_QueueHandle) {
-        std::cerr << "Error during nfq_create_queue(): " << strerror(errno) << std::endl;
+        GD_ERROR("Error during nfq_create_queue(): %i", strerror(errno));
         nfq_close(m_Handle);
         return false;
     }
 
     if (nfq_set_mode(m_QueueHandle, NFQNL_COPY_PACKET, 0x5EE) < 0) {
-        std::cerr << "Can't set packet_copy mode: " << strerror(errno) << std::endl;
+        GD_ERROR("Can't set packet_copy mode: %i", strerror(errno));
         nfq_destroy_queue(m_QueueHandle);
         nfq_close(m_Handle);
         return false;
@@ -80,23 +85,22 @@ bool NfqLayer::OnAttach() {
 
     m_fd = nfq_fd(m_Handle);
     if (m_fd < 0) {
-        std::cerr << "Failed to get file descriptor for NFQUEUE: " << strerror(errno) << std::endl;
+        GD_ERROR("Failed to get file descriptor for NFQUEUE: %i", strerror(errno));
         nfq_destroy_queue(m_QueueHandle);
         nfq_close(m_Handle);
         return false;
     }
 
-    PushDetection<IcmpScan>(IPPROTO_ICMP);
-
-    // PushDetection<SynFlood>(IPPROTO_TCP);
-    // PushDetection<SynStealthScan>(IPPROTO_TCP);
+    GD_INFO("libnetfilter attacked");
 
     return true;
 }
 
 bool NfqLayer::OnDetach() {
-    for (const auto& detection : m_Detections)
-        detection->OnDetach();
+    // logfile.close();
+
+    for (const auto& mitigation : m_Mitigations)
+        mitigation->OnDetach();
 
     if (m_QueueHandle)
         nfq_destroy_queue(m_QueueHandle);
@@ -109,7 +113,6 @@ bool NfqLayer::OnDetach() {
 
 void NfqLayer::OnUpdate(Guardian::Timestep ts) {
     char buffer[0x1000] __attribute__((aligned));
-    int rv = recv(m_fd, buffer, sizeof(buffer), 0);
-    if (rv >= 0)
+    if (const int rv = static_cast<const int>(recv(m_fd, buffer, sizeof(buffer), 0)); rv >= 0)
         nfq_handle_packet(m_Handle, buffer, rv);
 }
