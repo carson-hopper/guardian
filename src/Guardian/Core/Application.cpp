@@ -1,8 +1,8 @@
 #include "gdpch.h"
 #include "Guardian/Core/Application.h"
+#include "Guardian/Core/Time.h"
 
 #include <utility>
-#include "Guardian/Core/Time.h"
 
 namespace Guardian {
 
@@ -41,6 +41,8 @@ namespace Guardian {
 
         	for (const auto& layer : m_LayerStack)
         		layer->OnUpdate(timestep);
+
+            m_LastFrameTime = time;
         }
     }
 }
