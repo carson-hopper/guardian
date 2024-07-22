@@ -11,16 +11,17 @@
 
 class Packet {
 public:
-    Packet(nfq_q_handle* queueHandle, nfq_data* packetHandle, nfqnl_msg_packet_hdr* packetMessageHandle);
+    Packet(OptionalRefWrapper<nfq_q_handle> queueHandle, OptionalRefWrapper<nfq_data> packetHandle, OptionalRefWrapper<nfqnl_msg_packet_hdr> packetMessageHandle);
     ~Packet() = default;
 
     [[nodiscard]] virtual uint32_t& GetId() { return m_Id; }
-    [[nodiscard]] virtual nfq_q_handle* GetQueueHandle() const { return m_QueueHandle; }
-    [[nodiscard]] virtual nfq_data* GetPacketHandle() const { return m_PacketHandle; }
-    [[nodiscard]] virtual nfqnl_msg_packet_hdr* GetPacketMessageHandle() const { return m_PacketMessageHandle; }
+    [[nodiscard]] virtual OptionalRefWrapper<nfq_q_handle> GetQueueHandle() const { return m_QueueHandle; }
+    [[nodiscard]] virtual OptionalRefWrapper<nfq_data> GetPacketHandle() const { return m_PacketHandle; }
+    [[nodiscard]] virtual OptionalRefWrapper<nfqnl_msg_packet_hdr> GetPacketMessageHandle() const { return m_PacketMessageHandle; }
+    [[nodiscard]] virtual int32_t GetVerdict() { return m_Verdict; }
 
-    [[nodiscard]] virtual Buffer& GetBuffer() { return m_Payload; }
-    [[nodiscard]] virtual Ref<IpPacket> GetIpPacket() { return m_IpPacket; }
+    [[nodiscard]] Buffer& GetBuffer();
+    [[nodiscard]] Ref<IpPacket> GetIpPacket();
 
     [[nodiscard]] uint64_t GetTcpConnectionId();
     [[nodiscard]] Ref<TcpConnection> GetTcpConnection();
@@ -29,9 +30,9 @@ public:
 
 private:
     uint32_t m_Id;
-    nfq_q_handle* m_QueueHandle;
-    nfq_data* m_PacketHandle;
-    nfqnl_msg_packet_hdr* m_PacketMessageHandle;
+    OptionalRefWrapper<nfq_q_handle> m_QueueHandle;
+    OptionalRefWrapper<nfq_data> m_PacketHandle;
+    OptionalRefWrapper<nfqnl_msg_packet_hdr> m_PacketMessageHandle;
 
     Buffer m_Payload;
     Ref<IpPacket> m_IpPacket;

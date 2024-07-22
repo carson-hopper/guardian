@@ -38,12 +38,26 @@ namespace Guardian {
 
     		const auto layer = std::make_shared<T>();
 			m_LayerStack.emplace_back(layer);
-			return layer->OnAttach();
+
+    		GD_INFO("Loading {}", typeid(T).name());
+
+    		const bool r = layer->OnAttach();
+    		GD_ASSERT(r, std::format("Failed to load {}", typeid(T).name()));
+    		GD_INFO("Loaded {}", typeid(T).name());
+
+			return r;
 		}
 
 		bool PushLayer(const std::shared_ptr<Layer>& layer) {
     		m_LayerStack.emplace_back(layer);
-    		return layer->OnAttach();
+
+    		GD_INFO("Loading {}", typeid(layer).name());
+
+    		const bool r = layer->OnAttach();
+    		GD_ASSERT(r, std::format("Failed to load {}", typeid(layer).name()));
+    		GD_INFO("Loaded {}", typeid(layer).name());
+
+    		return r;
     	}
 
         void Close();

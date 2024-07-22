@@ -9,7 +9,7 @@ class SynFlood: public Mitigation {
 public:
     SynFlood(): Mitigation(TCP) {}
 
-    std::tuple<PacketAction, Buffer&> OnUpdate(const Ref<Packet>& packet) override;
+    PacketAction OnUpdate(Packet& packet) override;
 
 private:
     std::unordered_map<std::string, int> m_FloodMap;

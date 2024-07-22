@@ -5,18 +5,20 @@ set(CMAKE_CXX_STANDARD 23)
 
 add_subdirectory(vendor/glm)
 add_subdirectory(vendor/spdlog)
+add_subdirectory(vendor/cpp-httplib)
 
 # Add include directories
 include_directories(/usr/include/libnet)
 include_directories(/usr/include/hiredis)
 include_directories(./src)
+include_directories(vendor/cpp-httplib)
 
 # Enable it and fix all warnings
 add_definitions ("-Wall")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions("-DGD_ENABLE_ASSERTS")
-    add_definitions("-DGD_PROFILE=1")
+    add_definitions("-DGD_PROFILE=0")
 endif()
 
 # It can be disabled this way: cmake .. -DENABLE_NFQ_SUPPORT=OFF
@@ -91,8 +93,9 @@ add_executable(${PROJECT_NAME} src/Protect.cpp
 
 # Link the required libraries
 # target_link_libraries(${PROJECT_NAME} hiredis)
-# target_link_libraries(${PROJECT_NAME} pthread)
+target_link_libraries(${PROJECT_NAME} pthread)
 target_link_libraries(${PROJECT_NAME} curl)
+target_link_libraries(${PROJECT_NAME} httplib::httplib)
 target_link_libraries(${PROJECT_NAME} netfilter_queue)
 target_link_libraries(${PROJECT_NAME} spdlog)
 target_link_libraries(${PROJECT_NAME} glm)

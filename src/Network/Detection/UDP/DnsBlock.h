@@ -8,10 +8,10 @@ public:
     DnsBlock(): Mitigation(UDP) {}
 
     bool OnAttach() override;
-    std::tuple<PacketAction, Buffer&> OnUpdate(const Ref<Packet>& packet) override;
+    PacketAction OnUpdate(Packet& packet) override;
 
 private:
-    std::tuple<std::string, std::vector<std::string>> ParseDnsRequest(const Ref<Packet>& packet);
+    std::tuple<std::string, std::vector<std::string>> ParseDnsRequest(Packet& packet);
 
 public:
     static std::unordered_map<std::string, std::vector<std::string>> s_Domains;

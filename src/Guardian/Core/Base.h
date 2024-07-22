@@ -28,6 +28,12 @@
 namespace Guardian {
 
 	template<typename T>
+	using RefWrapper = std::reference_wrapper<T>;
+
+	template<typename T>
+	using OptionalRefWrapper = std::optional<RefWrapper<T>>;
+
+	template<typename T>
 	using Scope = std::unique_ptr<T>;
 	template<typename T, typename ... Args>
 	constexpr Scope<T> CreateScope(Args&& ... args) {

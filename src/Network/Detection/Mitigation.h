@@ -13,10 +13,7 @@ public:
 
     virtual bool OnAttach() { return true; }
     virtual bool OnDetach() { return true; }
-    virtual std::tuple<PacketAction, Buffer&> OnUpdate(const Ref<Packet>& packet) {
-        Buffer buffer = packet->GetBuffer();
-        return {ACCEPT, buffer};
-    }
+    virtual PacketAction OnUpdate(Packet& packet) { return ACCEPT; }
 
 private:
     Protocol m_Protocol;

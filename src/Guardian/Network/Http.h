@@ -1,21 +1,23 @@
 #pragma once
 
 #include "Guardian/Core/Base.h"
-#include <curl/curl.h>
+#include "httplib.h"
 
 class Http {
 public:
-    Http(std::string  url);
+    explicit Http(std::string url);
     ~Http();
 
     void GET(const std::string& document);
 
     virtual std::string& GetBuffer() { return m_Buffer; }
-    virtual CURLcode& GetCode() { return m_Code; }
+    virtual httplib::StatusCode& GetStatus() { return m_Status; }
+    virtual std::string& GetError() { return m_Error; }
 
 private:
-    CURL* m_Curl;
-    CURLcode m_Code;
+    httplib::Client m_Client;
+    httplib::StatusCode m_Status;
+    std::string m_Error;
 
     std::string m_Url;
     std::string m_Buffer;

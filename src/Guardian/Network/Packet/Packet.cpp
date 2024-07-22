@@ -7,16 +7,28 @@
 
 std::map<uint64_t, TcpConnection> Packet::s_Connections;
 
-Packet::Packet(nfq_q_handle* queueHandle, nfq_data* packetHandle, nfqnl_msg_packet_hdr* packetMessageHandle)
+Packet::Packet(OptionalRefWrapper<nfq_q_handle> queueHandle, OptionalRefWrapper<nfq_data> packetHandle, OptionalRefWrapper<nfqnl_msg_packet_hdr> packetMessageHandle)
     : m_QueueHandle(queueHandle), m_PacketHandle(packetHandle), m_PacketMessageHandle(packetMessageHandle), m_Verdict(0), m_HasSetVerdict(false) {
 
-    m_Id = ntohl(packetMessageHandle->packet_id);
+    if (packetMessageHandle.has_value())
+        m_Id = ntohl(packetMessageHandle->get().packet_id);
+}
 
-    uint8_t* payload;
-    if (const uint32_t payloadLength = nfq_get_payload(m_PacketHandle, &payload); payloadLength > 0) {
-        m_Payload = Buffer(payload, payloadLength);
-        m_IpPacket = CreateRef<IpPacket>(m_Payload);
+Buffer& Packet::GetBuffer() {
+    if (m_PacketHandle.has_value() && m_Payload.Size == 0) {
+        uint8_t* payload;
+        if (const uint32_t payloadLength = nfq_get_payload(&m_PacketHandle->get(), &payload); payloadLength > 0) {
+            m_Payload = Buffer(payload, payloadLength);
+            m_IpPacket = CreateRef<IpPacket>(m_Payload);
+        }
     }
+    return m_Payload;
+}
+Ref<IpPacket> Packet::GetIpPacket() {
+    if (m_IpPacket == nullptr) {
+        GetBuffer();
+    }
+    return m_IpPacket;
 }
 
 uint64_t Packet::GetTcpConnectionId() {
@@ -34,7 +46,9 @@ int32_t Packet::SetVerdict(const PacketAction verdict) {
     if (m_HasSetVerdict)
         return m_Verdict;
 
-    m_Verdict = nfq_set_verdict(m_QueueHandle, m_Id, verdict, m_Payload.Size, m_Payload.Data);
-    m_HasSetVerdict = true;
+    if (m_QueueHandle.has_value()) {
+        m_Verdict = nfq_set_verdict(&m_QueueHandle->get(), m_Id, verdict, GetBuffer().Size, GetBuffer().Data);
+        m_HasSetVerdict = true;
+    }
     return m_Verdict;
 }

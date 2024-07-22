@@ -9,7 +9,7 @@ class IcmpFlood: public Mitigation {
 public:
     IcmpFlood(): Mitigation(ICMP) {}
 
-    std::tuple<PacketAction, Buffer&> OnUpdate(const Ref<Packet>& packet) override;
+    PacketAction OnUpdate(Packet& packet) override;
 
 private:
     std::unordered_map<uint32_t, int> m_FloodMap;
